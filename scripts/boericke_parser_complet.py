@@ -884,6 +884,7 @@ COMMON_FIX = {
     "Stannum": "Tin",
     "Triticum": "Couch-grass",
     "Zingiber": "Ginger",
+    "Spongia Tosta": "Roasted Sponge",
 }
 
 def norm_header(h):
