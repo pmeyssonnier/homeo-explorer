@@ -17,6 +17,7 @@ scan de l'Internet Archive).
 | `data/boericke_remedies.json` | 606 remèdes : sections, phrases avec score OCR, page source, posologies retirées hors section Dose (tracées), `needs_review` et `review_reasons`. |
 | `data/boericke_validation.csv` | Anomalies détectées par le parser (ordre des sections, OCR douteux, fiche quasi vide…). |
 | `data/boericke_a_corriger.csv` | Feuille de correction OCR : phrases sous 0.90, avec page et lien vers le scan. |
+| `data/boericke_a_corriger_homeoint.csv` | Même feuille, pré-remplie avec des corrections alignées sur la transcription homeoint.org (9e éd., 1927) : 1 365 corrections d'OCR pur pré-validées, le reste à décider (`note_ia`). |
 | `data/boericke_symptoms.csv`, `data/boericke_review.csv` | Table des symptômes, revue des noms. |
 | `scripts/boericke_parser_complet.py` | Parser Google Colab : texte OCR → JSON (détection des remèdes, pagination, qualité OCR, filtrage des posologies, validation). |
 | `scripts/boericke_correction_ia.py` | Propositions de correction OCR par IA (API Anthropic), à valider à la main dans la feuille. |

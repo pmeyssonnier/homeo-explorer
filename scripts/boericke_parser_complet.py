@@ -1048,7 +1048,7 @@ if os.path.exists(FIX_CSV):
             _n_main += 1
         elif _ok[_i] and row["proposition_ia"].strip():
             OCR_FIXES.append((row["remedy"], row["section"], row["texte_ocr"], row["proposition_ia"].strip(),
-                              "proposition IA validée"))
+                              "validée : " + (row.get("source_proposition", "").strip() or "proposition IA")))
             _n_ia += 1
     print(f"Feuille de corrections lue : {_n_main} correction(s) manuelle(s), {_n_ia} proposition(s) IA validée(s)")
 n_ocr_fix = 0
