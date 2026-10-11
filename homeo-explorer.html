@@ -647,6 +647,18 @@ route();
 refreshInputs();
 /* ---------- Données mémorisées ---------- */
 (async () => {
+  // Ouverte depuis un site (GitHub Pages) : on charge les données publiées à côté de l'appli.
+  // Ouverte en local (file://) ou hors ligne : on reprend le fichier déjà chargé dans ce navigateur.
+  if (/^https?:$/.test(location.protocol)) {
+    try {
+      const res = await fetch("data/boericke_remedies.json", { cache: "no-cache" });
+      if (res.ok) {
+        await loadDB(await res.text(), false);
+        if (DB) $("loadMsg").innerHTML += ` <span class="muted">(données publiées, chargées automatiquement)</span>`;
+        return;
+      }
+    } catch (e) { /* hors ligne : on continue avec la copie locale */ }
+  }
   let cached = await storeGet();
   if (!cached) { try { cached = localStorage.getItem("homeo-explorer-db"); } catch (e) { cached = null; } }
   if (cached) loadDB(cached, false);
