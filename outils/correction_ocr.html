@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Correction OCR Boericke</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1f2328;--muted:#6a6f76;--line:#dcd9d2;--ok:#1f7a4d;--err:#b3261e;--acc:#2f5d8a;--hl:#fff4c2;--del:#fbd5d1;--ins:#cdeccf}
+@media (prefers-color-scheme: dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e6e6e3;--muted:#9aa0a6;--line:#33373c;--ok:#4cc38a;--err:#ff6b61;--acc:#7fb0e0;--hl:#4a4320;--del:#5a2a27;--ins:#24472c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:.2em 0 .6em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted);font-size:.9rem}
+button,select,input[type=text]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 14px;background:var(--card);color:var(--ink)}
+button{cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button.ok{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600}
+button.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+button.warn{border-color:var(--err);color:var(--err)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:.8rem}
+.tag.bad{border-color:var(--err);color:var(--err)}
+label.blk{display:block;font-weight:600;margin:12px 0 4px}
+.ocr{font-family:Georgia,"Times New Roman",serif;font-size:1.1rem;line-height:1.6;background:var(--hl);padding:10px 14px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
+textarea{width:100%;min-height:96px;font-family:Georgia,"Times New Roman",serif;font-size:1.15rem;line-height:1.6;padding:10px 14px;border:2px solid var(--acc);border-radius:8px;background:var(--card);color:var(--ink);resize:vertical}
+.diff{font-family:Georgia,serif;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.diff del{background:var(--del);text-decoration:line-through}
+.diff ins{background:var(--ins);text-decoration:none}
+.prop{border-left:4px solid var(--acc);padding:6px 12px;margin-top:6px}
+.bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar>div{height:100%;background:var(--acc)}
+.hidden{display:none}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:.8rem}
+a{color:var(--acc)}
+ul.help{margin:6px 0 0 18px;padding:0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Correction des phrases OCR douteuses — Boericke 1906</h1>
+
+  <div class="card">
+    <p>Charge la feuille <b>boericke_a_corriger_homeoint.csv</b> (ou <b>boericke_a_corriger.csv</b>) du dépôt. Tout reste sur ton PC.</p>
+    <div class="row">
+      <input type="file" id="file" accept=".csv,text/csv">
+      <span class="muted" id="loadMsg"></span>
+    </div>
+  </div>
+
+  <div id="work" class="hidden">
+    <div class="card">
+      <div class="row">
+        <label>Remède <input type="text" id="remedy" list="remedies" placeholder="tous (tape un nom)"></label>
+        <datalist id="remedies"></datalist>
+        <label>Afficher <select id="mode">
+          <option value="todo">à traiter</option>
+          <option value="prop">à traiter, avec proposition</option>
+          <option value="noprop">à traiter, sans proposition</option>
+          <option value="done">déjà traitées</option>
+          <option value="all">toutes</option>
+        </select></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="bar" style="flex:1"><div id="prog" style="width:0"></div></div>
+        <span class="muted" id="progTxt"></span>
+      </div>
+    </div>
+
+    <div class="card" id="itemCard">
+      <div class="row muted">
+        <b id="iRemedy" style="color:var(--ink)"></b><span id="iSection"></span><span id="iPages"></span>
+        <span class="tag" id="iScore"></span><span id="iState"></span>
+        <span style="margin-left:auto" id="iPos"></span>
+      </div>
+
+      <label class="blk">Texte OCR (1906, tel que lu)</label>
+      <div class="ocr" id="iOcr"></div>
+
+      <div id="propBox" class="hidden">
+        <label class="blk">Proposition (<span id="iPropSrc"></span>)</label>
+        <div class="prop diff" id="iPropDiff"></div>
+        <div class="muted" id="iPropNote"></div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <a id="iScan" target="_blank" rel="noopener"><button class="acc" type="button">Ouvrir le scan ↗</button></a>
+        <span class="muted">Corrige d'après l'image du scan, pas d'après la proposition.</span>
+      </div>
+
+      <label class="blk" for="edit">Texte corrigé</label>
+      <textarea id="edit" spellcheck="true" lang="en"></textarea>
+      <div class="row muted" style="margin-top:4px">
+        <button type="button" id="bClean">Nettoyer les caractères parasites</button>
+        <button type="button" id="bFromProp">Partir de la proposition</button>
+        <button type="button" id="bFromOcr">Repartir de l'OCR</button>
+      </div>
+      <label class="blk">Changements par rapport à l'OCR</label>
+      <div class="diff" id="iDiff"></div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="ok" id="bSave">Enregistrer ma correction <kbd>Ctrl</kbd>+<kbd>Entrée</kbd></button>
+        <button id="bAccept">Accepter la proposition telle quelle</button>
+        <button class="warn" id="bUnread">Illisible / je ne sais pas</button>
+        <button id="bUndo">Annuler le traitement</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="bPrev">← précédente</button>
+        <button id="bNext">suivante → <kbd>Ctrl</kbd>+<kbd>→</kbd></button>
+      </div>
+      <ul class="help muted">
+        <li>Garde l'orthographe de 1906 (haemorrhoids, oedema, diarrhoea…) et les renvois entre crochets : <code>[Bry.; Merc.]</code>.</li>
+        <li>« BHnd. — » au début d'un passage est l'intitulé « Mind. — » : laisse-le, le parser le reconnaîtra mieux une fois corrigé.</li>
+        <li>N'ajoute rien qui n'est pas sur le scan, même si c'est dans la proposition (9e édition, 1927).</li>
+      </ul>
+    </div>
+    <div class="card hidden" id="doneCard"><b>Plus de phrase dans cette sélection.</b> Change de remède ou de filtre, ou exporte.</div>
+
+    <div class="card">
+      <div class="row">
+        <button class="acc" id="bExport">Exporter la feuille (boericke_a_corriger.csv)</button>
+        <span class="muted" id="sumTxt"></span>
+      </div>
+      <p class="muted">Le fichier exporté garde toutes les colonnes ; <code>texte_ocr</code> n'est jamais modifié. Donne-le au parser avec le script : ta correction (<code>texte_corrige</code>) est prioritaire, une proposition est appliquée seulement si <code>valider</code> = o.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const STORE = "boericke-correction-ocr-v1";
+let ROWS = [], HEAD = [], view = [], pos = 0, fileKey = "", fileName = "";
+
+/* ---------- CSV ---------- */
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const first = text.split(/\r?\n/, 1)[0];
+  const sep = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ";" : ",";
+  const out = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === sep) { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(f); f = ""; if (row.length > 1 || row[0] !== "") out.push(row); row = [];
+    } else f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); out.push(row); }
+  return out;
+}
+const csvCell = (v) => /[",\n\r]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ---------- état d'une ligne ---------- */
+const isValidated = (r) => ["o", "oui", "x", "1", "y", "yes"].includes((r.valider || "").trim().toLowerCase());
+const state = (r) => r.texte_corrige.trim() ? "corrigée" : isValidated(r) && r.proposition_ia.trim() ? "proposition acceptée" : r._unread ? "illisible" : "";
+
+/* ---------- stockage local ---------- */
+function save() {
+  try {
+    const delta = {};
+    ROWS.forEach((r, i) => { if (r._touched) delta[i] = [r.texte_corrige, r.valider, r._unread ? 1 : 0]; });
+    localStorage.setItem(STORE, JSON.stringify({ fileKey, delta }));
+  } catch (e) {}
+}
+function restore() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (!s || s.fileKey !== fileKey) return 0;
+    let n = 0;
+    for (const [i, [t, v, u]] of Object.entries(s.delta)) {
+      const r = ROWS[+i]; if (!r) continue;
+      r.texte_corrige = t; r.valider = v; r._unread = !!u; r._touched = true; n++;
+    }
+    return n;
+  } catch (e) { return 0; }
+}
+
+/* ---------- chargement ---------- */
+$("file").addEventListener("change", async (ev) => {
+  const file = ev.target.files[0]; if (!file) return;
+  fileName = file.name;
+  const buf = await file.arrayBuffer();
+  let text;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch (e) { text = new TextDecoder("windows-1252").decode(buf); }
+  const data = parseCSV(text);
+  HEAD = data[0].map((h) => h.trim());
+  const need = ["remedy", "section", "texte_ocr", "texte_corrige"];
+  const miss = need.filter((h) => !HEAD.includes(h));
+  if (miss.length) { $("loadMsg").textContent = "Colonnes manquantes : " + miss.join(", ") + ". Est-ce bien la feuille de correction ?"; return; }
+  for (const c of ["proposition_ia", "confiance_ia", "note_ia", "valider", "source_proposition"]) if (!HEAD.includes(c)) HEAD.push(c);
+  ROWS = data.slice(1).filter((r) => r.length >= 4).map((r) => Object.fromEntries(HEAD.map((h, i) => [h, r[i] ?? ""])));
+  fileKey = ROWS.length + "|" + ROWS.slice(0, 5).map((r) => r.texte_ocr.slice(0, 30)).join("|");
+  const n = restore();
+  $("loadMsg").textContent = `${ROWS.length.toLocaleString("fr-BE")} phrases chargées${n ? ` — ${n} traitement(s) précédent(s) repris` : ""}.`;
+  $("remedies").innerHTML = [...new Set(ROWS.map((r) => r.remedy))].sort().map((x) => `<option value="${esc(x)}">`).join("");
+  $("work").classList.remove("hidden");
+  rebuild();
+});
+
+function rebuild(keep) {
+  const rem = $("remedy").value.trim().toLowerCase(), mode = $("mode").value;
+  view = ROWS.map((r, i) => i).filter((i) => {
+    const r = ROWS[i];
+    if (rem && r.remedy.toLowerCase() !== rem && !r.remedy.toLowerCase().startsWith(rem)) return false;
+    const done = !!state(r);
+    if (i === keep) return true;
+    if (mode === "todo") return !done;
+    if (mode === "prop") return !done && r.proposition_ia.trim();
+    if (mode === "noprop") return !done && !r.proposition_ia.trim();
+    if (mode === "done") return done;
+    return true;
+  });
+  pos = keep !== undefined && view.includes(keep) ? view.indexOf(keep) : 0;
+  show();
+}
+$("remedy").addEventListener("change", () => rebuild());
+$("remedy").addEventListener("keydown", (e) => { if (e.key === "Enter") rebuild(); });
+$("mode").addEventListener("change", () => rebuild());
+
+/* ---------- différence mot à mot ---------- */
+function diffWords(a, b) {
+  const A = a.split(/(\s+)/), B = b.split(/(\s+)/);
+  const n = A.length, m = B.length;
+  if (n * m > 400000) return esc(b);
+  const L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  let i = 0, j = 0, out = "";
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { out += esc(A[i]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) { if (A[i].trim()) out += `<del>${esc(A[i])}</del>`; else out += esc(A[i]); i++; }
+    else { if (B[j].trim()) out += `<ins>${esc(B[j])}</ins>`; else out += esc(B[j]); j++; }
+  }
+  while (i < n) { out += A[i].trim() ? `<del>${esc(A[i])}</del>` : esc(A[i]); i++; }
+  while (j < m) { out += B[j].trim() ? `<ins>${esc(B[j])}</ins>` : esc(B[j]); j++; }
+  return out;
+}
+const cur = () => (view.length && pos < view.length ? ROWS[view[pos]] : null);
+function refreshDiff() { const r = cur(); if (r) $("iDiff").innerHTML = diffWords(r.texte_ocr, $("edit").value) || "<span class='muted'>(vide)</span>"; }
+$("edit").addEventListener("input", refreshDiff);
+
+function show() {
+  const scope = ROWS.filter((r) => { const rem = $("remedy").value.trim().toLowerCase(); return !rem || r.remedy.toLowerCase().startsWith(rem); });
+  const done = scope.filter((r) => state(r)).length;
+  $("prog").style.width = (scope.length ? 100 * done / scope.length : 0) + "%";
+  $("progTxt").textContent = `${done.toLocaleString("fr-BE")} / ${scope.length.toLocaleString("fr-BE")} traitées`;
+  const tot = { c: 0, a: 0, u: 0 };
+  ROWS.forEach((r) => { const s = state(r); if (s === "corrigée") tot.c++; else if (s === "proposition acceptée") tot.a++; else if (s === "illisible") tot.u++; });
+  $("sumTxt").textContent = `${tot.c} corrigée(s) à la main · ${tot.a} proposition(s) acceptée(s) · ${tot.u} illisible(s)`;
+  const r = cur();
+  $("itemCard").classList.toggle("hidden", !r);
+  $("doneCard").classList.toggle("hidden", !!r);
+  if (!r) return;
+  $("iRemedy").textContent = r.remedy;
+  $("iSection").textContent = "· " + r.section;
+  $("iPages").textContent = r.pages ? "· " + r.pages : "";
+  const q = parseFloat(r.score_phrase);
+  $("iScore").textContent = isNaN(q) ? "" : "OCR " + q.toFixed(2);
+  $("iScore").className = "tag" + (q < 0.75 ? " bad" : "");
+  $("iState").innerHTML = state(r) ? `<span class="tag">${state(r)}</span>` : "";
+  $("iPos").textContent = `${pos + 1} / ${view.length}`;
+  $("iOcr").textContent = r.texte_ocr;
+  const hasProp = !!r.proposition_ia.trim();
+  $("propBox").classList.toggle("hidden", !hasProp);
+  $("bAccept").disabled = !hasProp; $("bFromProp").disabled = !hasProp;
+  if (hasProp) {
+    $("iPropSrc").textContent = r.source_proposition || "proposition automatique";
+    $("iPropDiff").innerHTML = diffWords(r.texte_ocr, r.proposition_ia);
+    $("iPropNote").textContent = [r.confiance_ia && "confiance " + r.confiance_ia, r.note_ia].filter(Boolean).join(" · ");
+  }
+  $("edit").value = r.texte_corrige || r.texte_ocr;
+  $("iScan").href = r.scan || "https://archive.org/details/pocketmanualhom00boergoog";
+  $("bPrev").disabled = pos === 0;
+  refreshDiff();
+}
+
+/* ---------- actions ---------- */
+function next() {
+  if ($("mode").value === "todo" || $("mode").value === "prop" || $("mode").value === "noprop") {
+    const r = cur(); if (r && state(r)) { view.splice(pos, 1); if (pos >= view.length) pos = Math.max(0, view.length - 1); show(); return; }
+  }
+  if (pos < view.length - 1) pos++; show();
+}
+function touch(r) { r._touched = true; save(); }
+$("bSave").onclick = () => {
+  const r = cur(); if (!r) return;
+  const t = $("edit").value.replace(/\s+/g, " ").trim();
+  if (!t) return;
+  r.texte_corrige = t; r._unread = false;   // identique à l'OCR = phrase vérifiée, déjà juste
+  touch(r); next();
+};
+$("bAccept").onclick = () => { const r = cur(); if (!r || !r.proposition_ia.trim()) return; r.texte_corrige = ""; r.valider = "o"; r._unread = false; touch(r); next(); };
+$("bUnread").onclick = () => { const r = cur(); if (!r) return; r.texte_corrige = ""; r.valider = ""; r._unread = true; touch(r); next(); };
+$("bUndo").onclick = () => { const r = cur(); if (!r) return; r.texte_corrige = ""; r.valider = ""; r._unread = false; touch(r); show(); };
+$("bPrev").onclick = () => { if (pos > 0) { pos--; show(); } };
+$("bNext").onclick = () => { if (pos < view.length - 1) { pos++; show(); } };
+$("bFromProp").onclick = () => { const r = cur(); if (r) { $("edit").value = r.proposition_ia; refreshDiff(); $("edit").focus(); } };
+$("bFromOcr").onclick = () => { const r = cur(); if (r) { $("edit").value = r.texte_ocr; refreshDiff(); $("edit").focus(); } };
+$("bClean").onclick = () => {
+  $("edit").value = $("edit").value
+    .replace(/[\^■»«•§¦|~`]+/g, "")
+    .replace(/\*(?=\s|$)/g, ".")
+    .replace(/\s*-\s+(?=[a-z])/g, "")
+    .replace(/\s+([.,;:])/g, "$1")
+    .replace(/\s{2,}/g, " ").trim();
+  refreshDiff();
+};
+document.addEventListener("keydown", (e) => {
+  if ($("work").classList.contains("hidden")) return;
+  if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); $("bSave").click(); }
+  else if (e.ctrlKey && e.key === "ArrowRight") { e.preventDefault(); $("bNext").click(); }
+  else if (e.ctrlKey && e.key === "ArrowLeft") { e.preventDefault(); $("bPrev").click(); }
+});
+
+/* ---------- export ---------- */
+$("bExport").onclick = () => {
+  const lines = [HEAD.join(",")].concat(ROWS.map((r) => HEAD.map((c) => csvCell(r[c] ?? "")).join(",")));
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "boericke_a_corriger.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+</script>
+</body>
+</html>

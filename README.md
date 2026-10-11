@@ -23,6 +23,7 @@ scan de l'Internet Archive).
 | `scripts/boericke_correction_ia.py` | Propositions de correction OCR par IA (API Anthropic), à valider à la main dans la feuille. |
 | `scripts/boericke_enrichir.py` | (En attente) traduction française automatique et statut BDPM. |
 | `outils/controle_etape1_echantillon.py` | Contrôle qualité : tire un échantillon aléatoire stratifié (6 strates × 50). |
+| `outils/correction_ocr.html` | Page de correction des phrases OCR douteuses : texte OCR, proposition éventuelle avec différences surlignées, lien vers le scan, saisie de la correction, export de la feuille pour le parser. |
 | `outils/controle_relecture.html` | Page de relecture de l'échantillon (ok / erreur, lien vers le scan, taux d'erreur avec IC 95 %, export CSV). |
 
 ## Contrôle qualité
