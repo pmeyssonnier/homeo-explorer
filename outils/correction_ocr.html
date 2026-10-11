@@ -44,9 +44,11 @@ ul.help{margin:6px 0 0 18px;padding:0}
   <div class="card">
     <p>Charge la feuille <b>boericke_a_corriger_homeoint.csv</b> (ou <b>boericke_a_corriger.csv</b>) du dépôt. Tout reste sur ton PC.</p>
     <div class="row">
+      <button class="acc" type="button" id="bRepo">Charger la feuille du dépôt</button>
+      <span class="muted">ou</span>
       <input type="file" id="file" accept=".csv,text/csv">
-      <span class="muted" id="loadMsg"></span>
     </div>
+    <p class="muted" id="loadMsg"></p>
   </div>
 
   <div id="work" class="hidden">
@@ -181,12 +183,32 @@ function restore() {
 }
 
 /* ---------- chargement ---------- */
+const REPO_SHEET = "../data/boericke_a_corriger_homeoint.csv";   // relatif à outils/ sur GitHub Pages
+const decode = (buf) => { try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch (e) { return new TextDecoder("windows-1252").decode(buf); } };
+
 $("file").addEventListener("change", async (ev) => {
   const file = ev.target.files[0]; if (!file) return;
-  fileName = file.name;
-  const buf = await file.arrayBuffer();
-  let text;
-  try { text = new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch (e) { text = new TextDecoder("windows-1252").decode(buf); }
+  loadText(decode(await file.arrayBuffer()), file.name);
+});
+
+async function loadRepo(auto) {
+  if (!/^https?:$/.test(location.protocol)) {
+    if (!auto) $("loadMsg").textContent = "Page ouverte en local : le chargement depuis le dépôt ne fonctionne qu'en ligne (GitHub Pages). Choisis le fichier à la main.";
+    return;
+  }
+  $("loadMsg").textContent = "Chargement de la feuille du dépôt…";
+  try {
+    const res = await fetch(REPO_SHEET, { cache: "no-cache" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    loadText(decode(await res.arrayBuffer()), "boericke_a_corriger_homeoint.csv (dépôt)");
+  } catch (e) {
+    $("loadMsg").textContent = "Feuille du dépôt introuvable (" + e.message + "). Choisis le fichier à la main.";
+  }
+}
+$("bRepo").onclick = () => loadRepo(false);
+
+function loadText(text, name) {
+  fileName = name;
   const data = parseCSV(text);
   HEAD = data[0].map((h) => h.trim());
   const need = ["remedy", "section", "texte_ocr", "texte_corrige"];
@@ -196,11 +218,12 @@ $("file").addEventListener("change", async (ev) => {
   ROWS = data.slice(1).filter((r) => r.length >= 4).map((r) => Object.fromEntries(HEAD.map((h, i) => [h, r[i] ?? ""])));
   fileKey = ROWS.length + "|" + ROWS.slice(0, 5).map((r) => r.texte_ocr.slice(0, 30)).join("|");
   const n = restore();
-  $("loadMsg").textContent = `${ROWS.length.toLocaleString("fr-BE")} phrases chargées${n ? ` — ${n} traitement(s) précédent(s) repris` : ""}.`;
+  $("loadMsg").textContent = `${fileName} : ${ROWS.length.toLocaleString("fr-BE")} phrases chargées${n ? ` — ${n} traitement(s) précédent(s) repris` : ""}.`;
   $("remedies").innerHTML = [...new Set(ROWS.map((r) => r.remedy))].sort().map((x) => `<option value="${esc(x)}">`).join("");
   $("work").classList.remove("hidden");
   rebuild();
-});
+}
+loadRepo(true);   // en ligne : la feuille du dépôt se charge toute seule
 
 function rebuild(keep) {
   const rem = $("remedy").value.trim().toLowerCase(), mode = $("mode").value;
