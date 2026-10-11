@@ -14,10 +14,10 @@ scan de l'Internet Archive).
 |---|---|
 | `homeo-explorer.html` | Application (un seul fichier HTML/JS, sans dépendance). Ouvrir dans le navigateur, puis charger `data/boericke_remedies.json`. |
 | `homeo-explorer_bm25.html` | Variante en test : classement BM25 (mots rares et passages qui réunissent les termes). |
-| `data/boericke_remedies.json` | 606 remèdes : sections, phrases avec score OCR, page source, posologies retirées hors section Dose (tracées), `needs_review` et `review_reasons`. Intègre 1 366 corrections d'OCR tracées dans `corrections_ocr` (origine indiquée pour chacune). |
+| `data/boericke_remedies.json` | 606 remèdes : sections, phrases avec score OCR, page source, posologies retirées hors section Dose (tracées), `needs_review` et `review_reasons`. Intègre 1 343 corrections d'OCR tracées dans `corrections_ocr` (origine indiquée pour chacune). |
 | `data/boericke_validation.csv` | Anomalies détectées par le parser (ordre des sections, OCR douteux, fiche quasi vide…). |
 | `data/boericke_a_corriger.csv` | Feuille de correction OCR : phrases sous 0.90, avec page et lien vers le scan. |
-| `data/boericke_a_corriger_homeoint.csv` | Même feuille, pré-remplie avec des corrections alignées sur la transcription homeoint.org (9e éd., 1927) : 1 365 corrections d'OCR pur pré-validées, le reste à décider (`note_ia`). |
+| `data/boericke_a_corriger_homeoint.csv` | Même feuille, pré-remplie avec des corrections alignées sur la transcription homeoint.org (9e éd., 1927) : 1 342 corrections d'OCR pur pré-validées (23 retirées car elles perdaient un mot de 1906), le reste à décider (`note_ia`). |
 | `data/boericke_symptoms.csv`, `data/boericke_review.csv` | Table des symptômes, revue des noms. |
 | `scripts/boericke_parser_complet.py` | Parser Google Colab : texte OCR → JSON (détection des remèdes, pagination, qualité OCR, filtrage des posologies, validation). |
 | `scripts/boericke_correction_ia.py` | Propositions de correction OCR par IA (API Anthropic), à valider à la main dans la feuille. |
@@ -31,7 +31,7 @@ Contrôle par échantillon aléatoire, vérifié à la main sur le scan de 1906 
 
 | Strate | Contrôlés | Erreurs | Taux d'erreur (IC 95 %) |
 |---|---|---|---|
-| Corrections d'OCR (1 366, alignées sur homeoint.org puis filtrées : aucun mot ajouté ni retiré) | 50 | 0 | 0 % (≤ 7,1 %) |
+| Corrections d'OCR (1 343, alignées sur homeoint.org puis filtrées : aucun mot ajouté ni retiré) | 50 | 0 | 0 % (≤ 7,1 %) |
 
 Les autres strates (limites des remèdes, posologies retirées, noms, phrases) restent à contrôler.
 
