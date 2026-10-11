@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relecture Boericke</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--ink:#1f2328;--muted:#6a6f76;--line:#dcd9d2;--ok:#1f7a4d;--err:#b3261e;--acc:#2f5d8a;--hl:#fff4c2}
+@media (prefers-color-scheme: dark){:root{--bg:#16181b;--card:#1f2226;--ink:#e6e6e3;--muted:#9aa0a6;--line:#33373c;--ok:#4cc38a;--err:#ff6b61;--acc:#7fb0e0;--hl:#4a4320}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:.2em 0 .6em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted);font-size:.9rem}
+button,select,input[type=text]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px 14px;background:var(--card);color:var(--ink)}
+button{cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button.ok{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600}
+button.err{background:var(--err);border-color:var(--err);color:#fff;font-weight:600}
+button.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+input[type=text]{flex:1;min-width:200px}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--line);font-size:.8rem;margin-right:6px}
+.tag.ok{border-color:var(--ok);color:var(--ok)} .tag.erreur{border-color:var(--err);color:var(--err)}
+.text{font-family:Georgia,"Times New Roman",serif;font-size:1.15rem;line-height:1.6;background:var(--hl);padding:12px 14px;border-radius:8px;margin:10px 0;white-space:pre-wrap;word-break:break-word}
+.ctx{font-family:Georgia,serif;color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.q{font-weight:600;margin:8px 0}
+.bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar>div{height:100%;background:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.hidden{display:none}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:.8rem}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Relecture de l'échantillon Boericke 1906</h1>
+
+  <div class="card" id="loadCard">
+    <p>Charge <b>controle_echantillon.csv</b> (produit par l'étape 1). Le fichier reste sur ton PC : rien n'est envoyé nulle part.</p>
+    <div class="row">
+      <input type="file" id="file" accept=".csv,text/csv">
+      <span class="muted" id="loadMsg"></span>
+    </div>
+  </div>
+
+  <div id="work" class="hidden">
+    <div class="card">
+      <div class="row">
+        <label>Strate <select id="strate"></select></label>
+        <label><input type="checkbox" id="onlyTodo" checked> seulement les lignes sans verdict</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="bar" style="flex:1"><div id="prog" style="width:0"></div></div>
+        <span class="muted" id="progTxt"></span>
+      </div>
+    </div>
+
+    <div class="card" id="itemCard">
+      <div class="row muted">
+        <span class="tag" id="iStrate"></span>
+        <span id="iRemedy" style="font-weight:600;color:var(--ink)"></span>
+        <span id="iSection"></span><span id="iPages"></span>
+        <span style="margin-left:auto" id="iPos"></span>
+      </div>
+      <div class="q" id="iQuestion"></div>
+      <div class="text" id="iText"></div>
+      <div class="ctx" id="iCtx"></div>
+      <div class="row" style="margin-top:12px">
+        <a id="iScan" target="_blank" rel="noopener"><button class="acc" type="button">Ouvrir le scan ↗</button></a>
+        <span class="muted">Le scan s'ouvre avec une recherche sur quelques mots de la phrase ; clique sur le résultat.</span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="ok" id="bOk">ok <kbd>O</kbd></button>
+        <button class="err" id="bErr">erreur <kbd>E</kbd></button>
+        <input type="text" id="iComment" placeholder="commentaire (3-4 mots si erreur)">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="bPrev">← précédente</button>
+        <button id="bNext">suivante →</button>
+        <button id="bClear">effacer le verdict</button>
+        <span class="muted" id="iVerdict"></span>
+      </div>
+      <p class="muted">Raccourcis : <kbd>O</kbd> ok · <kbd>E</kbd> erreur · <kbd>←</kbd> <kbd>→</kbd> naviguer. Ta progression est gardée dans ce navigateur.</p>
+    </div>
+    <div class="card hidden" id="doneCard"><b>Plus de ligne à relire dans cette sélection.</b> Choisis une autre strate ou exporte.</div>
+
+    <div class="card">
+      <h2 style="font-size:1.05rem;margin:0 0 8px">Résultat provisoire (intervalle de confiance à 95 %)</h2>
+      <table id="stats"></table>
+      <p class="muted">0 erreur sur 50 contrôles ⇒ taux réel inférieur à ~7 %. Une observation isolée n'est pas un diagnostic : on cherche les erreurs qui se répètent.</p>
+      <div class="row">
+        <button class="acc" id="bExport">Exporter le CSV rempli</button>
+        <button id="bReset">Tout effacer</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const STORE = "boericke-relecture-v1";
+let ROWS = [], HEAD = [], view = [], pos = 0, fileKey = "";
+
+/* ---------- CSV (champs entre guillemets, virgule ou point-virgule) ---------- */
+function parseCSV(text) {
+  text = text.replace(/^﻿/, "");
+  const first = text.split(/\r?\n/, 1)[0];
+  const sep = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ";" : ",";
+  const out = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === sep) { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(f); f = ""; if (row.length > 1 || row[0] !== "") out.push(row); row = [];
+    } else f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); out.push(row); }
+  return out;
+}
+const csvCell = (v) => /[",\n\r]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+
+/* ---------- stockage local (facultatif) ---------- */
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify({ fileKey, v: ROWS.map((r) => [r.verdict, r.commentaire]) })); } catch (e) {}
+}
+function restore() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || "null");
+    if (s && s.fileKey === fileKey && s.v.length === ROWS.length) {
+      s.v.forEach(([v, c], i) => { if (!ROWS[i].verdict) ROWS[i].verdict = v || ""; if (!ROWS[i].commentaire) ROWS[i].commentaire = c || ""; });
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+/* ---------- chargement ---------- */
+$("file").addEventListener("change", async (ev) => {
+  const file = ev.target.files[0]; if (!file) return;
+  const buf = await file.arrayBuffer();
+  let text;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(buf); } catch (e) { text = new TextDecoder("windows-1252").decode(buf); }
+  const data = parseCSV(text);
+  HEAD = data[0].map((h) => h.trim().toLowerCase());
+  const need = ["strate", "remedy", "a_controler", "verdict"];
+  const miss = need.filter((h) => !HEAD.includes(h));
+  if (miss.length) { $("loadMsg").textContent = "Colonnes manquantes : " + miss.join(", ") + ". Est-ce bien le fichier de l'étape 1 ?"; return; }
+  ROWS = data.slice(1).filter((r) => r.length >= HEAD.length - 1).map((r) => Object.fromEntries(HEAD.map((h, i) => [h, r[i] || ""])));
+  ROWS.forEach((r) => { r.verdict = (r.verdict || "").trim().toLowerCase(); r.commentaire = r.commentaire || ""; });
+  fileKey = ROWS.length + "|" + ROWS.slice(0, 5).map((r) => r.a_controler.slice(0, 30)).join("|");
+  const restored = restore();
+  $("loadMsg").textContent = `${ROWS.length} lignes chargées${restored ? " — relecture précédente reprise" : ""}.`;
+  const strates = [...new Set(ROWS.map((r) => r.strate))];
+  const order = ["correction_ocr", "limite_remede", "posologie_retiree", "nom_remede", "phrase_a_verifier", "phrase_fiable"];
+  strates.sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  $("strate").innerHTML = `<option value="">toutes</option>` + strates.map((s) => `<option>${s}</option>`).join("");
+  $("strate").value = strates[0] || "";
+  $("work").classList.remove("hidden");
+  rebuild(); stats();
+});
+
+function rebuild(keepRow) {
+  const s = $("strate").value, todo = $("onlyTodo").checked;
+  view = ROWS.map((r, i) => i).filter((i) => (!s || ROWS[i].strate === s) && (!todo || !ROWS[i].verdict || i === keepRow));
+  pos = keepRow !== undefined ? Math.max(0, view.indexOf(keepRow)) : 0;
+  show();
+}
+$("strate").addEventListener("change", () => rebuild());
+$("onlyTodo").addEventListener("change", () => rebuild());
+
+function show() {
+  const sel = ROWS.filter((r) => !$("strate").value || r.strate === $("strate").value);
+  const done = sel.filter((r) => r.verdict).length;
+  $("prog").style.width = (sel.length ? 100 * done / sel.length : 0) + "%";
+  $("progTxt").textContent = `${done} / ${sel.length} relues`;
+  const has = view.length > 0 && pos < view.length;
+  $("itemCard").classList.toggle("hidden", !has);
+  $("doneCard").classList.toggle("hidden", has);
+  if (!has) return;
+  const r = ROWS[view[pos]];
+  $("iStrate").textContent = r.strate;
+  $("iRemedy").textContent = r.remedy;
+  $("iSection").textContent = r.section ? "· " + r.section : "";
+  $("iPages").textContent = r.pages ? "· " + r.pages : "";
+  $("iPos").textContent = `${pos + 1} / ${view.length}`;
+  $("iQuestion").textContent = r.question || "";
+  $("iText").textContent = r.a_controler;
+  $("iCtx").textContent = r.contexte || "";
+  $("iScan").href = r.scan || "https://archive.org/details/pocketmanualhom00boergoog";
+  $("iComment").value = r.commentaire || "";
+  $("iVerdict").innerHTML = r.verdict ? `verdict actuel : <span class="tag ${r.verdict}">${r.verdict}</span>` : "";
+  $("bPrev").disabled = pos === 0;
+}
+
+function setVerdict(v) {
+  if (!view.length || pos >= view.length) return;
+  const i = view[pos];
+  ROWS[i].verdict = v;
+  ROWS[i].commentaire = $("iComment").value.trim();
+  save(); stats();
+  if ($("onlyTodo").checked) { view.splice(pos, 1); } else { pos = Math.min(pos + 1, view.length); }
+  show();
+  if (v === "ok") $("iComment").blur();
+}
+$("bOk").onclick = () => setVerdict("ok");
+$("bErr").onclick = () => {
+  if (!$("iComment").value.trim()) { $("iComment").focus(); $("iComment").placeholder = "décris l'erreur en quelques mots, puis Entrée"; return; }
+  setVerdict("erreur");
+};
+$("iComment").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); setVerdict("erreur"); } });
+$("iComment").addEventListener("input", () => { if (view.length && pos < view.length) { ROWS[view[pos]].commentaire = $("iComment").value; save(); } });
+$("bClear").onclick = () => { if (!view.length) return; const i = view[pos]; ROWS[i].verdict = ""; save(); stats(); show(); };
+$("bPrev").onclick = () => { if (pos > 0) { pos--; show(); } };
+$("bNext").onclick = () => { if (pos < view.length - 1) { pos++; show(); } };
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || $("work").classList.contains("hidden")) return;
+  const k = e.key.toLowerCase();
+  if (k === "o") setVerdict("ok");
+  else if (k === "e") $("bErr").click();
+  else if (e.key === "ArrowRight") $("bNext").click();
+  else if (e.key === "ArrowLeft") $("bPrev").click();
+});
+
+/* ---------- statistiques (Wilson 95 %) ---------- */
+function wilson(k, n, z = 1.96) {
+  if (!n) return [0, 1];
+  const p = k / n, d = 1 + z * z / n;
+  const c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+  return [Math.max(0, c - h), Math.min(1, c + h)];
+}
+const pct = (x) => (100 * x).toFixed(1).replace(".", ",") + " %";
+function stats() {
+  const by = {};
+  for (const r of ROWS) {
+    const s = (by[r.strate] = by[r.strate] || { n: 0, k: 0, tot: 0, pop: parseInt(String(r.population).replace(/\D/g, ""), 10) || 0 });
+    s.tot++;
+    if (r.verdict === "ok" || r.verdict === "erreur") { s.n++; if (r.verdict === "erreur") s.k++; }
+  }
+  let html = `<tr><th>Strate</th><th>Relues</th><th>Erreurs</th><th>Taux</th><th>IC 95 %</th><th>Erreurs estimées / population</th></tr>`;
+  for (const [s, v] of Object.entries(by)) {
+    const [lo, hi] = wilson(v.k, v.n);
+    html += `<tr><td>${s}</td><td>${v.n} / ${v.tot}</td><td>${v.k}</td><td>${v.n ? pct(v.k / v.n) : "–"}</td>
+      <td>${v.n ? pct(lo) + " – " + pct(hi) : "–"}</td><td>${v.n ? Math.round(lo * v.pop) + " – " + Math.round(hi * v.pop) + " / " + v.pop : "–"}</td></tr>`;
+  }
+  $("stats").innerHTML = html;
+}
+
+/* ---------- export ---------- */
+$("bExport").onclick = () => {
+  const cols = HEAD.includes("commentaire") ? HEAD : HEAD.concat("commentaire");
+  const lines = [cols.join(",")].concat(ROWS.map((r) => cols.map((c) => csvCell(r[c] ?? "")).join(",")));
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "controle_echantillon_rempli.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+$("bReset").onclick = () => {
+  if (!confirm("Effacer tous les verdicts de ce fichier ?")) return;
+  ROWS.forEach((r) => { r.verdict = ""; r.commentaire = ""; });
+  save(); stats(); rebuild();
+};
+</script>
+</body>
+</html>
