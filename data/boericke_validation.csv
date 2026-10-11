@@ -1,0 +1,46 @@
+remedy,probleme,detail
+Acalypha Indica,ordre des sections inhabituel,'gastric' après 'chest'
+Adonis Vernalis,ordre des sections inhabituel,'stomach' après 'heart'
+Adrenalin,OCR globalement douteux,score 0.71
+Anagallis,ordre des sections inhabituel,'urine' après 'extremities'
+Asclepias Tuberosa,ordre des sections inhabituel,'stomach' après 'respiratory'
+Athamanta,ordre des sections inhabituel,'mind' après 'extremities'
+Azadirachta Indica,ordre des sections inhabituel,'respiratory organs' après 'fever'
+Badiaga,ordre des sections inhabituel,'stomach' après 'respiratory'
+Bellis Perennis,ordre des sections inhabituel,'abdomen' après 'sleep'
+Berberis Aquifolium,OCR globalement douteux,score 0.74
+Branca Ursina,OCR globalement douteux,score 0.7
+Caladium Seguinum,ordre des sections inhabituel,'respiratory' après 'skin'
+Cantharis,ordre des sections inhabituel,'stomach' après 'chest'
+Cascara Sagrada,OCR globalement douteux,score 0.71
+Chenopodii Glauci Aphis,OCR globalement douteux,score 0.66
+Chloralum,ordre des sections inhabituel,'respiratory' après 'skin'
+Cistus Canadensis,ordre des sections inhabituel,'female' après 'sleep'
+Cuprum Arsenitum,ordre des sections inhabituel,'abdomen' après 'back'
+Elaps Corallinus,ordre des sections inhabituel,'stomach' après 'chest'
+Ferrum Iodatum,OCR globalement douteux,score 0.7
+Ferrum Phosphoricum,OCR globalement douteux,score 0.64
+Formalin,OCR globalement douteux,score 0.74
+Iodoformum,ordre des sections inhabituel,'abdomen' après 'chest'
+Kali Arsenicosum,OCR globalement douteux,score 0.5
+Kali Permanganicum,ordre des sections inhabituel,'throat' après 'respiratory'
+Lacticum Acidum,ordre des sections inhabituel,'urine' après 'extremities'
+Laurocerasus,ordre des sections inhabituel,'respiratory' après 'fever'
+Lobelia Purpurascens,ordre des sections inhabituel,'eyes' après 'chest'
+Lobelia Purpurascens,OCR globalement douteux,score 0.74
+Lupulus,ordre des sections inhabituel,'male' après 'sleep'
+Menyanthes,ordre des sections inhabituel,'mind' après 'fever'
+Negundo,quasi vide,56 car.
+Paris Quadrifolia,ordre des sections inhabituel,'respiratory' après 'fever'
+Pyrogenium,ordre des sections inhabituel,'stomach' après 'heart'
+Salvia Officinalis,OCR globalement douteux,score 0.63
+Sempervivum Tectorum,OCR globalement douteux,score 0.58
+Spiranthes,OCR globalement douteux,score 0.63
+Strontia,OCR globalement douteux,score 0.74
+Tarantula Cubensis,OCR globalement douteux,score 0.73
+Teucrium Marum,ordre des sections inhabituel,'rectum' après 'extremities'
+Teucrium Marum,OCR globalement douteux,score 0.73
+Thiosinaminum,OCR globalement douteux,score 0.5
+Thuja,ordre des sections inhabituel,'face' après 'skin'
+Viola Odorata,ordre des sections inhabituel,'urinary' après 'extremities'
+Zingiber,fin de livre coupée après la Dose,"6,868 car. retirés : AWKWAED— Let  tlilnEi  fall  from   hntid:    Apis;    Bo  v.; '        ,         Nat.  m. SBBADf-FAO— jEth.;     Amic: "

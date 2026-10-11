@@ -1,0 +1,7 @@
+__pycache__/
+*.bak
+*.diff
+correction_ia_cache.json
+traductions_cache.json
+*_djvu.txt
+.ipynb_checkpoints/

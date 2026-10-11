@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Homeo Explorer</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a65; --line: #e2e0d8;
+    --accent: #2f5d50; --accent-soft: #e4eeea; --warn: #8a5a00; --warn-soft: #fff4dc;
+    --danger: #a3261b; --danger-soft: #fde8e5; --mark: #fff0a8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --card: #20201d; --ink: #ecebe6; --muted: #a09f98; --line: #34332e;
+      --accent: #7fc0a9; --accent-soft: #23332d; --warn: #f0c060; --warn-soft: #3a3020;
+      --danger: #ff8a7a; --danger-soft: #3d2320; --mark: #5b5320;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.5rem; margin: 8px 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: .95rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 14px 16px; margin: 12px 0; }
+  .notice { background: var(--warn-soft); border-color: var(--warn); color: var(--ink); font-size: .92rem; }
+  .notice b { color: var(--warn); }
+  .danger { background: var(--danger-soft); border: 2px solid var(--danger); }
+  .danger h2 { color: var(--danger); margin: 0 0 6px; font-size: 1.1rem; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=search] { flex: 1 1 260px; padding: 12px 14px; font-size: 1rem; border-radius: 8px;
+         border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  button, .btn { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--accent);
+         background: var(--accent); color: var(--card); font-size: .95rem; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  .drop { border: 2px dashed var(--line); text-align: center; padding: 24px 16px; }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .terms span { display: inline-block; background: var(--accent-soft); color: var(--accent);
+         border-radius: 999px; padding: 2px 10px; margin: 2px 4px 2px 0; font-size: .85rem; }
+  .remedy h3 { margin: 0; font-size: 1.15rem; }
+  .remedy .common { color: var(--muted); font-style: italic; }
+  .badge { display: inline-block; font-size: .75rem; border: 1px solid var(--warn); color: var(--warn);
+         border-radius: 4px; padding: 0 6px; margin-left: 6px; vertical-align: middle; }
+  .score { float: right; color: var(--muted); font-size: .85rem; }
+  ul.syms { margin: 8px 0; padding-left: 18px; }
+  ul.syms li { margin: 3px 0; }
+  .sec { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--accent);
+         margin-right: 6px; }
+  mark { background: var(--mark); color: inherit; border-radius: 2px; }
+  .mods { font-size: .9rem; margin: 6px 0; }
+  .mods b { color: var(--muted); font-weight: 600; }
+  details { margin-top: 8px; }
+  details summary { cursor: pointer; color: var(--accent); font-size: .92rem; }
+  .full p { margin: 6px 0; font-size: .92rem; }
+  .evidence { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft);
+         font-size: .9rem; }
+  .evidence ol { margin: 6px 0 0; padding-left: 20px; }
+  .evidence a { color: var(--accent); }
+  .level { font-weight: 600; }
+  footer { color: var(--muted); font-size: .82rem; margin: 24px 0 8px; }
+  a { color: var(--accent); }
+  @media (max-width: 560px) { .score { float: none; display: block; } }
+  .bdpm { display: inline-block; font-size: .75rem; border-radius: 4px; padding: 0 6px; margin-left: 6px;
+         vertical-align: middle; border: 1px solid var(--line); color: var(--muted); }
+  .bdpm.on { border-color: var(--accent); color: var(--accent); }
+  .en { display: none; color: var(--muted); font-size: .85rem; font-style: italic; margin: 1px 0 4px; }
+  body.show-en .en { display: block; }
+  .opts { margin-top: 8px; font-size: .9rem; color: var(--muted); }
+  .opts label { cursor: pointer; }
+  nav.tabs { display: flex; gap: 4px; margin: 4px 0 12px; border-bottom: 1px solid var(--line); }
+  nav.tabs a { padding: 8px 12px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; }
+  nav.tabs a.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .ack { background: var(--accent-soft); border-color: var(--accent); }
+  .ack label { cursor: pointer; font-weight: 600; }
+  li.doubt { opacity: .75; }
+  .ocrtag { font-size: .72rem; border-radius: 3px; padding: 0 5px; margin-left: 6px; border: 1px dashed var(--warn); color: var(--warn); }
+  .src { font-size: .82rem; color: var(--muted); margin-top: 6px; }
+  #view-about h2 { font-size: 1.15rem; margin: 18px 0 6px; }
+  #view-about p, #view-about li { font-size: .95rem; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Homeo Explorer</h1>
+  <p class="sub">Outil documentaire : recherche plein texte dans une matière médicale homéopathique historique
+  (Boericke, 1906) et dans les publications indexées par PubMed.</p>
+  <nav class="tabs">
+    <a href="#recherche" id="tab-search">Recherche</a>
+    <a href="#apropos" id="tab-about">À propos et limites</a>
+  </nav>
+
+  <section id="view-search">
+    <div class="card notice">
+      <b>Outil documentaire, pas de prescription.</b> Les résultats indiquent quels remèdes un ouvrage de 1906
+      <b>mentionne</b> en lien avec des mots ; ils ne constituent ni un diagnostic, ni une indication, ni un conseil
+      de traitement. Les revues systématiques n'ont pas montré d'effet de l'homéopathie au-delà du placebo.
+      Pour tout problème de santé, consultez un médecin ou un pharmacien.
+      <a href="#apropos">Lire les limites</a>.
+    </div>
+
+    <div class="card ack" id="ackBox">
+      <label><input type="checkbox" id="ack"> J'ai compris que cet outil est documentaire et historique :
+      il ne remplace pas un avis médical et ne sert pas à choisir un traitement.</label>
+    </div>
+
+    <div class="card drop" id="drop">
+      <p id="loadMsg">Charge le fichier <b>boericke_remedies.json</b> produit dans Colab.</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn">Choisir le fichier<input type="file" id="file" accept=".json" hidden></label>
+        <button class="ghost" id="forget" hidden>Oublier les données</button>
+      </div>
+      <p class="muted">Ou dépose-le ici. Les données restent dans ton navigateur.</p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <input type="search" id="q" placeholder="Mots à rechercher dans le texte, ex. : toux nuit, vertige" disabled>
+        <button id="go" disabled>Rechercher</button>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="showEn"> Afficher aussi le texte original anglais</label>
+        &nbsp;·&nbsp;
+        <label><input type="checkbox" id="doubt"> Inclure les passages à l'OCR douteux</label>
+        &nbsp;·&nbsp;
+        <label><input type="checkbox" id="onlyFr"> Limiter aux souches commercialisées en France (information réglementaire)</label>
+      </div>
+      <div class="terms muted" id="terms"></div>
+    </div>
+
+    <div id="flags"></div>
+    <div id="results"></div>
+  </section>
+
+  <section id="view-about" class="hidden">
+    <div class="card">
+      <h2>À quoi sert cet outil</h2>
+      <p>Homeo Explorer est un <b>outil documentaire</b>. Il permet de rechercher des mots dans le texte d'une
+      matière médicale homéopathique publiée en 1906, et de voir quelles publications scientifiques indexées
+      dans PubMed mentionnent un remède. Il s'adresse à la curiosité historique, à la recherche bibliographique
+      et à l'esprit critique.</p>
+
+      <h2>Ce qu'il n'est pas</h2>
+      <ul>
+        <li>Ce n'est <b>pas un outil de diagnostic</b> : il ne sait rien de votre situation.</li>
+        <li>Ce n'est <b>pas un outil de prescription</b> : un remède cité dans un résultat n'est ni recommandé,
+          ni indiqué, ni conseillé. L'ordre des résultats reflète le nombre de mots retrouvés dans le texte,
+          rien d'autre.</li>
+        <li>Il ne remplace <b>pas un avis médical</b>. En cas de symptôme inquiétant, persistant ou qui s'aggrave,
+          consultez un médecin. Urgence : 112. Médecin de garde : 1733. Centre Antipoisons : 070 245 245.
+          Centre de Prévention du Suicide : 0800 32 123.</li>
+      </ul>
+
+      <h2>État des connaissances</h2>
+      <p>Les évaluations d'ensemble (revues Cochrane, rapport NHMRC australien de 2015, rapport du KCE belge
+      de 2011) n'ont pas mis en évidence d'effet de l'homéopathie au-delà du placebo. Pour des traitements à
+      efficacité démontrée, voir le <a href="https://www.cbip.be" target="_blank" rel="noopener">répertoire du CBIP</a>
+      ou demander à un pharmacien.</p>
+
+      <h2>Sources et leur statut</h2>
+      <ul>
+        <li><b>Boericke, <i>Pocket Manual of Homoeopathic Materia Medica</i>, 3e édition, 1906</b> : domaine public,
+          numérisé par Google Books et Internet Archive. Chaque fiche indique la page de l'édition originale et un
+          lien vers le scan, pour vérifier le texte à la source.</li>
+        <li><b>PubMed</b> (NCBI) : interrogé en direct. Le nombre de publications <b>ne mesure pas l'efficacité</b> :
+          une publication peut conclure à l'absence d'effet, être de faible qualité ou porter sur autre chose que
+          l'usage recherché. Seule la lecture des conclusions, en particulier des revues systématiques, renseigne
+          sur l'efficacité.</li>
+        <li><b>Base de données publique des médicaments</b> (France, si le fichier enrichi est chargé) : information
+          réglementaire sur l'enregistrement d'une souche, sans lien avec une quelconque efficacité.</li>
+      </ul>
+
+      <h2>Qualité des données</h2>
+      <ul>
+        <li>Le texte provient d'une <b>reconnaissance optique (OCR)</b> d'un livre de 1906. Les noms de remèdes ont
+          été vérifiés et corrigés ; le corps du texte peut contenir des erreurs.</li>
+        <li>Chaque phrase porte un indice de qualité OCR (part de mots reconnus) : <b>fiable</b> (≥ 90 %),
+          <b>à vérifier</b> (75–90 %), <b>douteux</b> (&lt; 75 %). Les passages douteux sont exclus des résultats
+          par défaut.</li>
+        <li>Les <b>posologies</b> de 1906 ne sont jamais affichées.</li>
+        <li>La traduction française éventuelle est <b>automatique et non relue</b> : l'original anglais fait foi.</li>
+      </ul>
+
+      <h2>Vocabulaire</h2>
+      <p>« Mention » signifie qu'un remède est cité dans le texte de 1906 en lien avec un mot ; « modalités »
+      désigne ce que l'auteur décrivait comme aggravant ou améliorant ; « publications indexées » désigne des
+      articles référencés dans PubMed, quelle que soit leur conclusion.</p>
+    </div>
+  </section>
+
+  <footer id="foot">
+    Sources : W. Boericke, <i>Pocket Manual of Homoeopathic Materia Medica</i>, 3e éd., 1906 (domaine public, Internet Archive) ;
+    NCBI PubMed E-utilities ; Base de données publique des médicaments (ANSM). Outil documentaire, sans finalité médicale.
+    Posologies historiques volontairement non affichées.
+  </footer>
+</main>
+
+<script>
+"use strict";
+
+/* ---------- Drapeaux rouges : affichés AVANT tout résultat ---------- */
+const RED_FLAGS = [
+  { re: /(fi[eè]vre|temp[ée]rature).*(b[ée]b[ée]|nourrisson|nouveau-n[ée])|(b[ée]b[ée]|nourrisson|nouveau-n[ée]).*(fi[eè]vre|temp[ée]rature)/i,
+    msg: "Fièvre chez un nourrisson : consultez un médecin rapidement (médecin de garde : 1733). Avant 3 mois, c'est une urgence." },
+  { re: /douleur.*(poitrine|thorac|bras gauche|m[âa]choire)|(poitrine|thorac).*(douleur|serr|oppress)/i,
+    msg: "Douleur thoracique : appelez le 112 sans attendre." },
+  { re: /(difficult|g[êe]ne|mal).*(respir|souffle)|(essouffl|[ée]touff|suffoqu)/i,
+    msg: "Difficulté à respirer : appelez le 112." },
+  { re: /(paralys|visage.*(tomb|asym[ée]tr)|parole.*(difficile|troubl)|bras.*(faible|engourdi))/i,
+    msg: "Signes possibles d'AVC : appelez immédiatement le 112." },
+  { re: /(saign|h[ée]morrag|sang dans|vomi.*sang|crach.*sang)/i,
+    msg: "Saignement : un avis médical est nécessaire. Saignement abondant : 112." },
+  { re: /(raideur.*nuque|nuque.*raide).*(fi[eè]vre)?|(fi[eè]vre).*(nuque|taches)/i,
+    msg: "Fièvre avec raideur de nuque ou taches sur la peau : urgence, appelez le 112." },
+  { re: /(intoxic|empoisonn|aval[ée].*(produit|m[ée]dicament|pile))/i,
+    msg: "Intoxication : Centre Antipoisons 070 245 245, ou 112 en cas de malaise." },
+  { re: /(suicid|envie de mourir|me tuer|idées? noires|en finir)/i,
+    msg: "Vous n'êtes pas seul·e : appelez le Centre de Prévention du Suicide au 0800 32 123 (gratuit, 24 h/24), ou le 112 en cas de danger immédiat." },
+  { re: /(enceinte|grossesse)/i,
+    msg: "Grossesse : demandez toujours l'avis de votre médecin, sage-femme ou pharmacien avant tout produit." },
+  { re: /(convuls|perte de connaissance|[ée]vanoui|inconscien)/i,
+    msg: "Convulsions ou perte de connaissance : appelez le 112." },
+];
+
+/* ---------- Dictionnaire FR -> racines anglaises (recherche dans l'original) ---------- */
+const FR_EN = {
+  "mal de tête": "headache", "maux de tête": "headache", "céphalée": "headache", "migraine": "headache",
+  "mal de gorge": "throat", "gorge": "throat", "toux sèche": "dry cough", "toux": "cough",
+  "rhume": "coryza", "nez qui coule": "coryza", "nez bouché": "obstruct", "éternuement": "sneez",
+  "fièvre": "fever", "frissons": "chill", "sueur": "sweat", "transpiration": "perspir",
+  "nausée": "nausea", "vomissement": "vomit", "diarrhée": "diarrh", "constipation": "constipat",
+  "ballonnement": "flatul", "gaz": "flatus", "brûlures d'estomac": "heartburn", "aigreurs": "sour",
+  "estomac": "stomach", "ventre": "abdomen", "colique": "colic", "foie": "liver",
+  "hémorroïdes": "haemorrhoid", "urine": "urin", "vessie": "bladder", "reins": "kidney",
+  "règles douloureuses": "dysmenorr", "règles": "menses", "ménopause": "climacter",
+  "insomnie": "sleepless", "sommeil": "sleep", "cauchemar": "dream", "fatigue": "weak",
+  "faiblesse": "weak", "épuisement": "exhaust", "vertige": "vertigo", "étourdissement": "giddi",
+  "anxiété": "anxi", "angoisse": "anguish", "peur": "fear", "tristesse": "sad", "chagrin": "grief",
+  "irritable": "irrit", "colère": "anger", "nervosité": "nervous", "trac": "anticipat",
+  "mémoire": "memory", "concentration": "concentrat",
+  "démangeaison": "itch", "eczéma": "eczema", "urticaire": "urticaria", "bouton": "pimple",
+  "acné": "acne", "verrue": "wart", "peau": "skin", "brûlure": "burn", "piqûre": "sting",
+  "ecchymose": "bruise", "bleu": "bruise", "contusion": "bruise", "coup": "injur", "entorse": "sprain",
+  "douleur": "pain", "crampe": "cramp", "rhumatisme": "rheumat", "articulation": "joint",
+  "genou": "knee", "dos": "back", "lombaire": "lumbar", "nuque": "neck", "épaule": "shoulder",
+  "sciatique": "sciatic", "goutte": "gout", "gonflement": "swell", "enflure": "swell",
+  "oeil": "eye", "œil": "eye", "yeux": "eye", "conjonctivite": "conjunctiv", "oreille": "ear",
+  "otite": "ear", "dent": "tooth", "gencive": "gum", "bouche": "mouth", "langue": "tongue",
+  "aphte": "aphth", "enrouement": "hoarse", "voix": "voice", "asthme": "asthma",
+  "palpitation": "palpitat", "coeur": "heart", "cœur": "heart", "poitrine": "chest",
+  "fréquent": "frequent", "fréquente": "frequent", "souvent": "frequent", "envie d'uriner": "urging",
+  "rougeur": "red", "rouge": "red", "pâle": "pale", "brûle": "burning", "lourdeur": "heav",
+  "pire": "worse", "aggravé": "worse", "mieux": "better", "amélioré": "better",
+  "nuit": "night", "matin": "morning", "soir": "evening", "après-midi": "afternoon",
+  "froid": "cold", "chaud": "heat", "chaleur": "heat", "humidité": "damp", "humide": "damp",
+  "mouvement": "motion", "repos": "rest", "pression": "pressure", "air frais": "open air",
+  "soif": "thirst", "appétit": "appetite", "sec": "dry", "sèche": "dry", "lancinant": "stitch",
+  "brûlant": "burning", "piquant": "sting", "pulsatile": "throb", "droit": "right", "gauche": "left",
+};
+const STOP = new Set(["les", "des", "une", "est", "pas", "pour", "dans", "sur", "par", "avec", "qui",
+  "que", "mon", "mes", "suis", "plus", "aux", "ont", "fait", "tout", "tres", "elle", "lui", "son", "ses",
+  "cette", "depuis", "quand", "avoir", "etre", "the", "and", "with", "fois", "jour", "jours", "souvent"]);
+
+const SECTION_FR = {
+  intro: "général", mind: "psychisme", head: "tête", eyes: "yeux", ears: "oreilles", nose: "nez",
+  face: "visage", mouth: "bouche", teeth: "dents", tongue: "langue", throat: "gorge",
+  stomach: "estomac", abdomen: "abdomen", stool: "selles", rectum: "rectum", urine: "urine",
+  urinary: "urinaire", kidneys: "reins", bladder: "vessie", male: "homme", female: "femme",
+  sexual: "sexuel", respiratory: "respiratoire", "respiratory organs": "respiratoire", chest: "poitrine",
+  heart: "cœur", back: "dos", neck: "nuque", extremities: "membres", limbs: "membres", sleep: "sommeil",
+  skin: "peau", fever: "fièvre", modalities: "modalités", relationship: "relations",
+  gastric: "digestif", tissues: "tissus", nerves: "nerfs", generalities: "généralités",
+  larynx: "larynx", vision: "vision", vertigo: "vertige", scalp: "cuir chevelu", glands: "glandes",
+  blood: "sang", circulation: "circulation",
+};
+const HIDDEN_SECTIONS = new Set(["dose", "extra homoeopathic uses"]);   // posologies jamais affichées
+
+/* ---------- Navigation ---------- */
+function route() {
+  const about = location.hash === "#apropos";
+  document.getElementById("view-about").classList.toggle("hidden", !about);
+  document.getElementById("view-search").classList.toggle("hidden", about);
+  document.getElementById("tab-about").classList.toggle("active", about);
+  document.getElementById("tab-search").classList.toggle("active", !about);
+  try { window.scrollTo(0, 0); } catch (e) { /* environnement sans défilement */ }
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- Accusé de lecture (obligatoire avant toute recherche) ---------- */
+const ACK_KEY = "homeo-explorer-ack-v1";
+let ACK = false;
+try { ACK = localStorage.getItem(ACK_KEY) === "1"; } catch (e) { ACK = false; }
+function refreshInputs() {
+  const ready = !!DB && ACK;
+  document.getElementById("q").disabled = !ready;
+  document.getElementById("go").disabled = !ready;
+  document.getElementById("ack").checked = ACK;
+  document.getElementById("ackBox").classList.toggle("hidden", ACK);
+}
+
+/* ---------- État ---------- */
+let DB = null;
+let INDEX = [];        // [{ r, sec, fr, en, nfr, nen }]
+let HAS_FR = false;
+
+/* ---------- Utilitaires ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const norm = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/œ/g, "oe").toLowerCase();
+const splitSent = (txt) => txt.split(/(?<=[.;])\s+(?=[A-Z])/).map((s) => s.replace(/\[[^\]]*\]/g, "").trim()).filter((s) => s.length > 3);
+/* Posologies : jamais affichées, même hors section Dose (filet de sécurité si le JSON n'a pas été nettoyé) */
+const POSO_RE = new RegExp([
+  "(?<!im)(?<!im\\s)\\bpotenc(?:y|ies)\\b", "\\btritur", "\\btrit\\b", "\\battenuation", "\\bdilution", "\\btincture\\b",
+  "\\bgrains?\\b", "\\bminims?\\b", "\\bgrammes?\\b", "\\b(?:tea|table)[\\s-]?spoonful", "\\bhypoderm",
+  "\\b[1-9]\\d{0,2}\\s?x\\b", "\\b(?:\\d+|one|two|three|four|five|six|ten|fifteen|twenty)[\\s-]drops?\\b",
+  "(?<!large\\s)(?<!smaller\\s)(?<!toxic\\s)\\bdoses?\\b", "\\btimes\\s+(?:a|per)\\s+day\\b",
+  "\\b(?:ointment|cerate|lotion|liniment|gargle|douche|infusion|decoction)s?\\b", "\\blocally\\b(?!,?\\s+it\\s+has)",
+  "\\bnon-?\\s?homoeopathic\\b", "\\bper[\\s-]+cent\\b", "\\boz\\.", "\\bdrams?\\b"].join("|"), "i");
+const isPoso = (en) => POSO_RE.test(en || "");
+const noPoso = (txt) => splitSent(txt || "").filter((x) => !isPoso(x)).join(" ");
+
+/* ---------- Persistance (IndexedDB : le JSON traduit dépasse la limite de localStorage) ---------- */
+function idb() {
+  return new Promise((ok, ko) => {
+    try {
+      const req = indexedDB.open("homeo-explorer", 1);
+      req.onupgradeneeded = () => req.result.createObjectStore("kv");
+      req.onsuccess = () => ok(req.result);
+      req.onerror = () => ko(req.error);
+    } catch (e) { ko(e); }
+  });
+}
+async function storeSet(v) {
+  try { const db = await idb(); await new Promise((ok, ko) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, "db"); t.oncomplete = ok; t.onerror = () => ko(t.error); }); return true; }
+  catch (e) { return false; }
+}
+async function storeGet() {
+  try { const db = await idb(); return await new Promise((ok) => { const r = db.transaction("kv").objectStore("kv").get("db"); r.onsuccess = () => ok(r.result || null); r.onerror = () => ok(null); }); }
+  catch (e) { return null; }
+}
+async function storeDel() {
+  try { const db = await idb(); db.transaction("kv", "readwrite").objectStore("kv").delete("db"); } catch (e) { /* rien */ }
+  try { localStorage.removeItem("homeo-explorer-db"); } catch (e) { /* ancienne version */ }
+}
+
+/* ---------- Chargement ---------- */
+async function loadDB(text, persist) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { $("loadMsg").textContent = "Fichier illisible : ce n'est pas un JSON valide."; return; }
+  if (!data || !Array.isArray(data.remedies)) { $("loadMsg").textContent = "Ce JSON ne contient pas de liste « remedies »."; return; }
+  DB = data; INDEX = [];
+  HAS_FR = DB.remedies.some((r) => r.sentences);
+  for (const r of DB.remedies) {
+    const qOf = new Map();
+    for (const pairs of Object.values(r.lines || {})) for (const [en, q] of pairs) qOf.set(en, q);
+    if (r.sentences) {
+      for (const [sec, pairs] of Object.entries(r.sentences)) {
+        if (HIDDEN_SECTIONS.has(sec)) continue;
+        for (const [en, fr] of pairs) if (!isPoso(en)) INDEX.push({ r, sec, en, fr, q: qOf.has(en) ? qOf.get(en) : 1, nen: en.toLowerCase(), nfr: norm(fr) });
+      }
+    } else if (r.lines) {
+      for (const [sec, pairs] of Object.entries(r.lines)) {
+        if (HIDDEN_SECTIONS.has(sec)) continue;
+        for (const [en, q] of pairs) if (!isPoso(en)) INDEX.push({ r, sec, en, fr: null, q, nen: en.toLowerCase(), nfr: "" });
+      }
+    } else {
+      for (const [sec, txt] of Object.entries(r.sections || {})) {
+        if (HIDDEN_SECTIONS.has(sec) || sec === "relationship" || sec === "modalities") continue;
+        for (const en of splitSent(txt)) if (!isPoso(en)) INDEX.push({ r, sec, en, fr: null, q: 1, nen: en.toLowerCase(), nfr: "" });
+      }
+    }
+  }
+  const saved = persist ? await storeSet(text) : true;
+  const nBdpm = DB.remedies.filter((r) => r.bdpm && r.bdpm.commercialisees > 0).length;
+  $("loadMsg").innerHTML = `<b>${DB.remedies.length}</b> remèdes, ${INDEX.length.toLocaleString("fr-BE")} symptômes indexés` +
+    (HAS_FR ? ", texte en français" : ", texte anglais seulement (charge le JSON enrichi pour le français)") +
+    (DB.remedies.some((r) => r.bdpm) ? `, ${nBdpm} souches commercialisées en France.` : ".") +
+    (saved ? "" : " <span class='muted'>(non mémorisé : à recharger la prochaine fois)</span>");
+  $("onlyFr").disabled = !DB.remedies.some((r) => r.bdpm);
+  $("forget").hidden = false;
+  $("doubt").disabled = !DB.remedies.some((r) => r.lines);
+  refreshInputs();
+  if (ACK) $("q").focus();
+}
+
+$("file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) f.text().then((t) => loadDB(t, true)); });
+const drop = $("drop");
+["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) f.text().then((t) => loadDB(t, true)); });
+$("forget").addEventListener("click", async () => { await storeDel(); location.reload(); });
+$("ack").addEventListener("change", (e) => {
+  ACK = e.target.checked;
+  try { localStorage.setItem(ACK_KEY, ACK ? "1" : "0"); } catch (err) { /* mémorisé pour la session seulement */ }
+  refreshInputs();
+});
+$("doubt").addEventListener("change", () => { if ($("q").value.trim()) search($("q").value); });
+$("showEn").addEventListener("change", (e) => document.body.classList.toggle("show-en", e.target.checked));
+$("onlyFr").addEventListener("change", () => { if ($("q").value.trim()) search($("q").value); });
+
+/* ---------- Analyse de la requête ----------
+   Chaque terme se cherche à la fois dans la traduction française (par préfixe, sans accents)
+   et dans l'original anglais (via le dictionnaire FR -> EN). */
+const FR_EN_N = Object.fromEntries(Object.entries(FR_EN).map(([k, v]) => [norm(k), v]));
+function frPrefix(w) { return w.length <= 5 ? w : w.slice(0, Math.max(5, w.length - 2)); }
+
+function parseQuery(query) {
+  let q = " " + norm(query).replace(/[^a-z0-9' -]/g, " ") + " ";
+  const terms = [];
+  for (const key of Object.keys(FR_EN_N).filter((k) => k.includes(" ")).sort((a, b) => b.length - a.length)) {
+    if (q.includes(" " + key + " ") || q.includes(" " + key + "s ")) {
+      terms.push({ label: key, fr: key.split(" ").filter((w) => w.length > 2).map(frPrefix), en: FR_EN_N[key].split(" ") });
+      q = q.replace(key, " ");
+    }
+  }
+  for (const w of q.split(/[\s']+/)) {
+    if (w.length < 3 || STOP.has(w)) continue;
+    const en = FR_EN_N[w] ? FR_EN_N[w].split(" ") : (FR_EN_N[w.replace(/s$/, "")] ? FR_EN_N[w.replace(/s$/, "")].split(" ") : []);
+    terms.push({ label: w, fr: [frPrefix(w)], en: en.length ? en : (/^[a-z]+$/.test(w) ? [w] : []) });
+  }
+  return terms.map((t) => ({
+    ...t,
+    frRes: t.fr.map((p) => new RegExp("(^|[^a-z])" + reEsc(p))),
+    enRes: t.en.map((s) => new RegExp("\\b" + reEsc(s), "i")),
+  }));
+}
+
+function termHit(t, row) {
+  const frOk = HAS_FR && row.nfr && t.frRes.length && t.frRes.every((re) => re.test(row.nfr));
+  const enOk = t.enRes.length && t.enRes.some((re) => re.test(row.nen));
+  return frOk || enOk;
+}
+
+/* ---------- Recherche ---------- */
+function search(query) {
+  const terms = parseQuery(query);
+  $("terms").innerHTML = terms.length
+    ? "Termes : " + terms.map((t) => {
+        const en = t.en.join(" ");
+        return `<span>${esc(t.label)}${en && en !== t.label ? " · " + esc(en) : ""}</span>`;
+      }).join("") : "";
+  const flags = RED_FLAGS.filter((f) => f.re.test(query)).map((f) => f.msg);
+  $("flags").innerHTML = flags.length ? `<div class="card danger"><h2>Avant tout</h2>${flags.map((m) => `<p>${esc(m)}</p>`).join("")}</div>` : "";
+  if (!terms.length) { $("results").innerHTML = `<p class="muted">Aucun terme reconnu. Essaie avec d'autres mots (ex. « toux nuit », « vertige matin »).</p>`; return; }
+
+  if (!ACK) { $("results").innerHTML = `<p class="muted">Coche d'abord la case de lecture ci-dessus.</p>`; return; }
+  const onlyFr = $("onlyFr").checked;
+  const withDoubt = $("doubt").checked;
+  const byRemedy = new Map();
+  for (const row of INDEX) {
+    if (onlyFr && !(row.r.bdpm && row.r.bdpm.commercialisees > 0)) continue;
+    if (!withDoubt && row.q < 0.75) continue;
+    const hit = terms.filter((t) => termHit(t, row));
+    if (!hit.length) continue;
+    let e = byRemedy.get(row.r);
+    if (!e) { e = { r: row.r, rows: [], terms: new Set() }; byRemedy.set(row.r, e); }
+    e.rows.push({ ...row, n: hit.length * (row.q >= 0.9 ? 1 : 0.7) });
+    hit.forEach((t) => e.terms.add(t.label));
+  }
+  const ranked = [...byRemedy.values()]
+    .map((e) => ({ ...e, best: Math.max(...e.rows.map((x) => x.n)) }))
+    .map((e) => ({ ...e, score: e.best * 10 + e.terms.size * 5 + Math.min(e.rows.length, 10) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 15);
+
+  if (!ranked.length) { $("results").innerHTML = `<p class="muted">Aucune correspondance dans Boericke pour ces termes.</p>`; return; }
+  $("results").innerHTML =
+    `<p class="muted">${ranked.length} remède(s) mentionné(s) en lien avec ces mots dans Boericke (1906).
+     L'ordre reflète uniquement le nombre de mots retrouvés dans le texte : ce n'est ni un classement d'efficacité,
+     ni une recommandation.</p>` +
+    ranked.map((e, i) => card(e, i, terms)).join("");
+  document.querySelectorAll("button[data-ev]").forEach((b) => b.addEventListener("click", () => evidence(b, terms)));
+}
+
+/* ---------- Surlignage ---------- */
+function markFr(text, terms) {
+  const prefixes = terms.flatMap((t) => t.fr);
+  return text.split(/(\s+|[.,;:!?()«»"])/).map((tok) => {
+    const n = norm(tok);
+    return n && prefixes.some((p) => n.startsWith(p)) ? `<mark>${esc(tok)}</mark>` : esc(tok);
+  }).join("");
+}
+function markEn(text, terms) {
+  const stems = terms.flatMap((t) => t.en);
+  if (!stems.length) return esc(text);
+  const re = new RegExp("\\b(" + stems.map(reEsc).join("|") + ")[a-z]*", "gi");
+  return esc(text).replace(re, (m) => `<mark>${m}</mark>`);
+}
+
+function bdpmBadge(r) {
+  const b = r.bdpm;
+  if (!b) return "";
+  const ex = esc((b.exemples || []).join(" ; "));
+  if (b.commercialisees > 0) return `<span class="bdpm on" title="${ex}">commercialisée en France</span>`;
+  if (b.specialites > 0) return `<span class="bdpm" title="${ex}">enregistrée en France, non commercialisée</span>`;
+  return `<span class="bdpm">absente de la BDPM</span>`;
+}
+
+function card(e, i, terms) {
+  const r = e.r;
+  const rows = e.rows.sort((a, b) => b.n - a.n).slice(0, 6);
+  const ocrTag = (q) => q < 0.75 ? `<span class="ocrtag">OCR douteux</span>` : (q < 0.9 ? `<span class="ocrtag">OCR à vérifier</span>` : "");
+  const line = (x) => (x.fr
+    ? `${markFr(x.fr, terms)}<div class="en">${markEn(x.en, terms)}</div>`
+    : markEn(x.en, terms)) + ocrTag(x.q);
+  const worse = r.worse_fr && r.worse_fr.length ? r.worse_fr : r.worse;
+  const better = r.better_fr && r.better_fr.length ? r.better_fr : r.better;
+  const mods = [];
+  if (worse && worse.length) mods.push(`<b>Aggravation décrite en 1906 :</b> ${esc(worse.slice(0, 6).join(" ; "))}`);
+  if (better && better.length) mods.push(`<b>Amélioration décrite en 1906 :</b> ${esc(better.slice(0, 6).join(" ; "))}`);
+  const full = r.sentences
+    ? Object.entries(r.sentences).filter(([s]) => !HIDDEN_SECTIONS.has(s))
+        .map(([s, pairs]) => [s, pairs.filter((p) => !isPoso(p[0]))]).filter(([, pairs]) => pairs.length).map(([s, pairs]) =>
+        `<p><span class="sec">${esc(SECTION_FR[s] || s)}</span>${esc(pairs.map((p) => p[1]).join(" "))}
+         <span class="en">${esc(pairs.map((p) => p[0]).join(" "))}</span></p>`).join("")
+    : Object.entries(r.sections || {}).filter(([s]) => !HIDDEN_SECTIONS.has(s))
+        .map(([s, t]) => [s, noPoso(t)]).filter(([, t]) => t)
+        .map(([s, t]) => `<p><span class="sec">${esc(SECTION_FR[s] || s)}</span>${esc(t)}</p>`).join("");
+  const common = r.common_name_fr && r.common_name_fr !== r.common_name
+    ? `${esc(r.common_name_fr)} <span class="muted">(${esc(r.common_name)})</span>` : esc(r.common_name || "");
+  const sr = r.source_ref || {};
+  const nameNote = r.name_status && !["lu tel quel", "validé manuellement"].includes(r.name_status)
+    ? ` · nom ${esc(r.name_status)} (en-tête OCR : « ${esc(sr.entete_ocr || "")} »)` : "";
+  const rv = r.needs_review
+    ? ` · <b>fiche à relire</b>${(r.review_reasons || []).filter((x) => !x.startsWith("posologie")).length
+        ? " (" + esc(r.review_reasons.filter((x) => !x.startsWith("posologie")).join(", ")) + ")" : ""}` : "";
+  const oc = r.ocr ? ` · OCR : ${r.ocr.fiable} phrase(s) fiable(s), ${r.ocr.a_verifier} à vérifier, ${r.ocr.douteux} douteuse(s)` : "";
+  const src = `<div class="src">Source : Boericke 1906, ${esc(sr.pages || "page inconnue")}${sr.url ? ` · <a href="${esc(sr.url)}" target="_blank" rel="noopener">voir le scan</a>` : ""}${nameNote}${oc}${rv}</div>`;
+  return `<div class="card remedy">
+    <span class="score">${e.rows.length} passage(s), ${e.terms.size}/${terms.length} terme(s)</span>
+    <h3>${esc(r.remedy)} <span class="badge">mention historique</span>${bdpmBadge(r)}</h3>
+    <div class="common">${common}</div>
+    <ul class="syms">${rows.map((x) => `<li class="${x.q < 0.9 ? "doubt" : ""}"><span class="sec">${esc(SECTION_FR[x.sec] || x.sec)}</span>${line(x)}</li>`).join("")}</ul>
+    ${mods.length ? `<div class="mods">${mods.join("<br>")}</div>` : ""}
+    <div class="row"><button class="ghost" data-ev="${i}" data-name="${esc(r.remedy)}">Publications indexées (PubMed)</button></div>
+    <div class="evidence" id="ev${i}" hidden></div>
+    ${src}
+    <details><summary>Fiche complète${r.sentences ? " (traduction automatique)" : " (texte original anglais, 1906)"}</summary><div class="full">${full}</div></details>
+  </div>`;
+}
+
+/* ---------- PubMed (NCBI E-utilities, accès libre) ---------- */
+const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
+let lastCall = 0;
+async function eutils(path, params) {
+  const wait = 350 - (Date.now() - lastCall);           // max ~3 requêtes/s sans clé API
+  if (wait > 0) await sleep(wait);
+  lastCall = Date.now();
+  const url = `${EUTILS}/${path}?` + new URLSearchParams({ ...params, retmode: "json", tool: "homeo_explorer" });
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+let lastDiag = null;     // diagnostic de la dernière requête "base"
+async function count(term, keepDiag) {
+  const j = await eutils("esearch.fcgi", { db: "pubmed", term, retmax: 0 });
+  const r = (j && j.esearchresult) || {};
+  if (keepDiag) {
+    lastDiag = {
+      term,
+      translation: r.querytranslation || "(aucune)",
+      errors: [r.ERROR, ...Object.values(r.errorlist || {}).flat()].filter((x) => x && (!Array.isArray(x) || x.length)),
+      warnings: Object.values(r.warninglist || {}).flat().filter(Boolean),
+      raw: `${EUTILS}/esearch.fcgi?` + new URLSearchParams({ db: "pubmed", term, retmax: 0, retmode: "json" }),
+    };
+  }
+  const n = parseInt(r.count, 10);
+  if (Number.isNaN(n)) throw new Error("réponse PubMed inattendue" + (r.ERROR ? " : " + r.ERROR : ""));
+  return n;
+}
+function diagHtml() {
+  if (!lastDiag) return "";
+  const d = lastDiag;
+  return `<details style="margin-top:6px"><summary class="muted">Diagnostic de la requête</summary>
+    <div class="muted" style="word-break:break-word">
+      <div><b>Envoyée :</b> ${esc(d.term)}</div>
+      <div><b>Comprise par PubMed :</b> ${esc(d.translation)}</div>
+      ${d.errors.length ? `<div><b>Erreurs :</b> ${esc(JSON.stringify(d.errors))}</div>` : ""}
+      ${d.warnings.length ? `<div><b>Avertissements :</b> ${esc(JSON.stringify(d.warnings))}</div>` : ""}
+      <div><a href="${esc(d.raw)}" target="_blank" rel="noopener">Réponse brute de PubMed (JSON)</a></div>
+    </div></details>`;
+}
+
+async function evidence(btn, terms) {
+  const stems = terms.flatMap((t) => t.en);
+  const i = btn.dataset.ev, box = $("ev" + i);
+  const name = btn.dataset.name.replace(/\(.*?\)/g, "").trim();
+  const first = name.split(" ")[0];
+  const remedyTerm = `("${name}"[tiab] OR ${first}[tiab])`;
+  const homeo = `(homeopathy[mh] OR homeopath*[tiab] OR homoeopath*[tiab])`;
+  const reviews = `(systematic[sb] OR meta-analysis[pt] OR "Cochrane Database Syst Rev"[ta])`;
+  const rct = `randomized controlled trial[pt]`;
+  const topic = stems.filter((s) => !["worse", "better", "night", "morning", "evening", "afternoon", "right", "left"].includes(s));
+  const topicTerm = topic.length ? `(${topic.map((s) => s + "*[tiab]").join(" OR ")})` : null;
+
+  btn.disabled = true; box.hidden = false; box.innerHTML = "Interrogation de PubMed…";
+  try {
+    const base = `${remedyTerm} AND ${homeo}`;
+    lastDiag = null;
+    const nAll = await count(base, true);
+    const nRct = await count(`${base} AND ${rct}`);
+    const nRev = await count(`${base} AND ${reviews}`);
+    const nTopic = topicTerm ? await count(`${base} AND ${topicTerm}`) : null;
+    const nTopicRct = topicTerm ? await count(`${base} AND ${topicTerm} AND ${rct}`) : null;
+
+    const s = await eutils("esearch.fcgi", { db: "pubmed", term: `${base} AND ${reviews}`, retmax: 3, sort: "pub_date" });
+    const ids = s.esearchresult.idlist || [];
+    let list = "";
+    if (ids.length) {
+      const sum = await eutils("esummary.fcgi", { db: "pubmed", id: ids.join(",") });
+      list = "<ol>" + ids.map((id) => {
+        const d = sum.result[id] || {};
+        return `<li><a href="https://pubmed.ncbi.nlm.nih.gov/${id}/" target="_blank" rel="noopener">${esc(d.title || id)}</a> <span class="muted">(${esc((d.pubdate || "").slice(0, 4))}, ${esc(d.source || "")})</span></li>`;
+      }).join("") + "</ol>";
+    }
+    const level = nRev > 0 ? "Des revues systématiques existent : ce sont leurs conclusions, pas leur nombre, qui renseignent sur l'efficacité."
+                : nRct > 0 ? "Des essais randomisés sont publiés, sans revue systématique dédiée : leurs résultats sont à lire individuellement."
+                : nAll > 0 ? "Les publications indexées sont d'autres types (cas, observations, recherche fondamentale), qui ne permettent pas d'évaluer une efficacité."
+                : "Aucune publication indexée dans PubMed.";
+    const pubmedLink = `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(base + (topicTerm ? " AND " + topicTerm : ""))}`;
+    box.innerHTML = `
+      <div class="muted">Publications indexées : un décompte bibliographique, pas une mesure d'efficacité. Une publication peut conclure à l'absence d'effet.</div>
+      <div><b>${esc(name)}</b> et homéopathie : ${nAll} publication(s) indexée(s), dont ${nRct} essai(s) randomisé(s) et ${nRev} revue(s) systématique(s).</div>
+      ${topicTerm ? `<div>Avec ces mots : ${nTopic} publication(s), dont ${nTopicRct} essai(s) randomisé(s).</div>` : ""}
+      <div class="level">${esc(level)}</div>
+      ${list ? `<div style="margin-top:6px">Revues systématiques les plus récentes (à lire pour leurs conclusions) :</div>${list}` : ""}
+      <div style="margin-top:6px"><a href="${pubmedLink}" target="_blank" rel="noopener">Voir la recherche complète sur PubMed</a>
+      <span class="muted">· Un nombre d'articles ne dit rien de leurs conclusions : lire les résumés.</span></div>
+      ${diagHtml()}`;
+  } catch (err) {
+    box.innerHTML = `PubMed est injoignable ou a renvoyé une erreur (${esc(err.message)}). Réessaie dans un moment.${diagHtml()}`;
+  } finally { btn.disabled = false; }
+}
+
+/* ---------- Événements ---------- */
+$("go").addEventListener("click", () => search($("q").value));
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") search($("q").value); });
+
+/* ---------- Démarrage ---------- */
+route();
+refreshInputs();
+/* ---------- Données mémorisées ---------- */
+(async () => {
+  let cached = await storeGet();
+  if (!cached) { try { cached = localStorage.getItem("homeo-explorer-db"); } catch (e) { cached = null; } }
+  if (cached) loadDB(cached, false);
+})();
+</script>
+</body>
+</html>
